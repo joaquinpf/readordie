@@ -27,6 +27,7 @@ func (senv serverEnv) Start() {
 		v1.GET("/manga/:mid", senv.getManga)
 		v1.DELETE("/manga/:mid", senv.deleteManga)
 		v1.GET("/manga/:mid/chapter", senv.listMangaChapters)
+		v1.GET("/admin/rescan", senv.rescanManga)
 	}
 	r.Run()
 }

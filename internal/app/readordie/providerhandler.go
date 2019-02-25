@@ -7,6 +7,6 @@ import (
 
 func (senv serverEnv) getProviders(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
-		"providers": [2]string{"ReadMangaToday", "MangaStream"},
+		"providers": [4]string{"ReadMangaToday", "MangaStream", "MangaSee", "MangaHub"},
 	})
 }

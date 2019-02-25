@@ -3,7 +3,7 @@ package readordie
 import (
 	"github.com/asdine/storm"
 	"github.com/gin-gonic/gin"
-	"github.com/joaquinpf/readordie/internal/pkg/core"
+	"github.com/joaquinpf/readordie/internal/pkg/readordie"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
@@ -24,26 +24,26 @@ func (senv serverEnv) postManga(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	var existing core.Manga
+	var existing readordie.Manga
 	err := senv.db.One("Name", request.Name, &existing)
 	if err == nil {
 		c.JSON(http.StatusConflict, gin.H{"error": "Manga already registered"})
 		return
 	}
 
-	manga, err := core.NewManga(request.Name, request.Folder, request.Provider)
+	manga, err := readordie.NewManga(request.Name, request.Folder, request.Provider)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	senv.loadStoredFiles(*manga)
 
 	err = senv.db.Save(manga)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
-	senv.loadStoredFiles(*manga)
 
 	c.JSON(http.StatusOK, manga)
 }
@@ -55,7 +55,7 @@ func (senv serverEnv) putManga(c *gin.Context) {
 		return
 	}
 
-	var em core.Manga
+	var em readordie.Manga
 	err := senv.db.One("ID", c.Param("mid"), &em)
 	if err == storm.ErrNotFound {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Manga doesn't exist"})
@@ -65,19 +65,17 @@ func (senv serverEnv) putManga(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if em.Provider == request.Provider {
-		c.JSON(http.StatusNotModified, gin.H{"error": err.Error()})
-		return
-	}
 
-	manga, err := core.NewManga(em.Name, em.Folder, request.Provider)
+	manga, err := readordie.NewManga(em.Name, em.Folder, request.Provider)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	manga.ID = em.ID
 
-	err = senv.db.Save(&manga)
+	senv.loadStoredFiles(*manga)
+
+	err = senv.db.Save(manga)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -87,7 +85,7 @@ func (senv serverEnv) putManga(c *gin.Context) {
 }
 
 func (senv serverEnv) listManga(c *gin.Context) {
-	var mangas []core.Manga
+	var mangas []readordie.Manga
 	err := senv.db.AllByIndex("Name", &mangas)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -99,7 +97,7 @@ func (senv serverEnv) listManga(c *gin.Context) {
 }
 
 func (senv serverEnv) getManga(c *gin.Context) {
-	var em core.Manga
+	var em readordie.Manga
 	err := senv.db.One("ID", c.Param("mid"), &em)
 	if err == storm.ErrNotFound {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Manga Not Found"})
@@ -114,7 +112,7 @@ func (senv serverEnv) getManga(c *gin.Context) {
 }
 
 func (senv serverEnv) deleteManga(c *gin.Context) {
-	var manga core.Manga
+	var manga readordie.Manga
 	manga.ID = c.Param("mid")
 	err := senv.db.DeleteStruct(&manga)
 	if err == storm.ErrNotFound {
@@ -130,7 +128,7 @@ func (senv serverEnv) deleteManga(c *gin.Context) {
 }
 
 func (senv serverEnv) listMangaChapters(c *gin.Context) {
-	var em core.Manga
+	var em readordie.Manga
 	err := senv.db.One("ID", c.Param("mid"), &em)
 	if err == storm.ErrNotFound {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Manga Not Found"})
@@ -138,7 +136,7 @@ func (senv serverEnv) listMangaChapters(c *gin.Context) {
 	}
 
 	mangaRepo := senv.db.From(c.Param("mid"))
-	chapters := make([]core.Chapter, 0)
+	chapters := make([]readordie.Chapter, 0)
 	err = mangaRepo.AllByIndex("Major", &chapters)
 	if err != nil && err != storm.ErrNotFound {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -148,14 +146,30 @@ func (senv serverEnv) listMangaChapters(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"chapters": chapters})
 }
 
-func (senv serverEnv) loadStoredFiles(manga core.Manga) {
+func (senv serverEnv) rescanManga(c *gin.Context) {
+	var mangas []readordie.Manga
+	err := senv.db.AllByIndex("Name", &mangas)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	for _, manga := range mangas {
+		senv.db.Drop(manga.ID)
+		senv.loadStoredFiles(manga)
+	}
+
+	c.Status(http.StatusOK)
+}
+
+func (senv serverEnv) loadStoredFiles(manga readordie.Manga) {
 	files, err := ioutil.ReadDir(manga.Folder)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	mangaRepo := senv.db.From(manga.ID)
 	for _, f := range files {
-		var re = regexp.MustCompile(`(?m)(?P<name>.*) - (?P<major>[^.]+)(?:\.(?P<minor>.*))?\.(zip|rar|cbz|cbr)`)
+		var re = regexp.MustCompile(`(?m)(?P<name>.*) - c(?P<major>[^.]+)(?:\.(?P<minor>.*))?\.(zip|rar|cbz|cbr)`)
 		matches := re.FindStringSubmatch(f.Name())
 		if matches == nil {
 			continue
@@ -172,7 +186,7 @@ func (senv serverEnv) loadStoredFiles(manga core.Manga) {
 			}
 		}
 
-		ch := core.NewChapter(manga.ID, manga.Provider, uint16(major), uint8(minor), 0, "", time.Now())
+		ch := readordie.NewChapter(manga.ID, manga.Provider, uint16(major), uint8(minor), 0, "", time.Now())
 		err = mangaRepo.Save(&ch)
 		if err != nil {
 			continue

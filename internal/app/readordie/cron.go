@@ -3,7 +3,7 @@ package readordie
 import (
 	"github.com/asdine/storm"
 	"github.com/jasonlvhit/gocron"
-	"github.com/joaquinpf/readordie/internal/pkg/core"
+	"github.com/joaquinpf/readordie/internal/pkg/readordie"
 	log "github.com/sirupsen/logrus"
 	"time"
 )
@@ -21,11 +21,12 @@ func NewCronEnv(stormdb *storm.DB) cronEnv {
 func (env cronEnv) Start(everyMinutes uint64) {
 	gocron.Every(everyMinutes).Minutes().Do(env.updateMangas)
 	gocron.Start()
+	gocron.RunAll()
 }
 
 func (env cronEnv) updateMangas() {
 	log.Info("Checking for new manga chapters")
-	var mangas []core.Manga
+	var mangas []readordie.Manga
 	err := env.db.AllByIndex("Name", &mangas)
 	if err == storm.ErrNotFound {
 		log.Info("No mangas to process")
@@ -45,14 +46,14 @@ func (env cronEnv) updateMangas() {
 		}
 		mangaRepo := env.db.From(manga.ID)
 		for _, chapter := range chapters {
-			var ec core.Chapter
+			var ec readordie.Chapter
 			err := mangaRepo.One("ID", chapter.ID, &ec)
 			if err == nil {
 				continue
 			}
 
 			log.Infof("Downloading %v", chapter)
-			err = core.DownloadAndZip(manga, chapter, manga.Folder)
+			err = readordie.DownloadAndZip(manga, chapter, manga.Folder)
 			if err != nil {
 				log.Errorf("Unable to download %v", chapter)
 				continue

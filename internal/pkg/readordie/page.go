@@ -1,4 +1,4 @@
-package core
+package readordie
 
 // Page model
 type Page struct {

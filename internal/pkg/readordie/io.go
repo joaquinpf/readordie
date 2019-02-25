@@ -1,4 +1,4 @@
-package core
+package readordie
 
 import (
 	"archive/zip"
@@ -6,6 +6,8 @@ import (
 	"github.com/cavaliercoder/grab"
 	"io"
 	"os"
+	"path"
+	"strings"
 )
 
 // DownloadAndZip Downloads and generate a zip of a manga chapter
@@ -15,10 +17,6 @@ func DownloadAndZip(manga Manga, chapter Chapter, outputFolder string) error {
 		return err
 	}
 
-	links := make([]string, 0)
-	for _, page := range pages {
-		links = append(links, page.Link)
-	}
 	dir := NewID()
 	err = os.Mkdir(dir, 0666)
 	if err != nil {
@@ -26,17 +24,21 @@ func DownloadAndZip(manga Manga, chapter Chapter, outputFolder string) error {
 	}
 	defer os.RemoveAll(dir)
 
-	resp, err := grab.GetBatch(3, dir, links...)
-	if err != nil {
-		return err
-	}
 	files := make([]string, 0)
-	for df := range resp {
-		if err = df.Err(); err != nil {
+	for _, page := range pages {
+		ext := strings.Split(path.Ext(page.Link), "?")[0]
+		fileName := fmt.Sprintf("%v/%03d%v", dir, page.Number, ext)
+		resp, err := grab.Get(fileName, page.Link)
+		if err != nil {
 			return err
 		}
-		files = append(files, df.Filename)
+		if err = resp.Err(); err != nil {
+			return err
+		}
+
+		files = append(files, resp.Filename)
 	}
+
 	err = zipFiles(outputFolder, fmt.Sprintf("%v - %v.zip", manga, chapter), files)
 	if err != nil {
 		return err

@@ -1,9 +1,10 @@
-package core
+package readordie
 
 import (
 	"errors"
 	"fmt"
 	"github.com/anaskhan96/soup"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -68,13 +69,14 @@ func (ms MangaStream) ListChapters(manga Manga) ([]Chapter, error) {
 		}
 		info := cells[0].Find("a")
 		if info.Error != nil {
-			return nil, info.Error
+			continue
 		}
 		infoParts := strings.Split(info.Text(), "-")
 		chapterText := strings.TrimSpace(infoParts[0])
 		chapterNumberMajor, err := strconv.ParseUint(chapterText, 10, 16)
 		if err != nil {
-			return nil, err
+			log.Warnf("MangaStream: Error while parsing chapter string %v", chapterText)
+			continue
 		}
 
 		link := "https://readms.net" + info.Attrs()["href"]

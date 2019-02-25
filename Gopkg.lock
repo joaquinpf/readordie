@@ -2,6 +2,14 @@
 
 
 [[projects]]
+  digest = "1:cc306cae16c310ca360eaee3e563109e251832a3f6a13b26bf39cc6a43c7c9f6"
+  name = "github.com/agnivade/levenshtein"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "834b435c3df04fba060c8d74a40d849ab2c4a090"
+  version = "v1.0.1"
+
+[[projects]]
   digest = "1:4b7a1da41770d5650518d4752d75d64e652ad1906b1c5ee274a10e63958ac631"
   name = "github.com/anaskhan96/soup"
   packages = ["."]
@@ -85,11 +93,27 @@
   version = "v1.0.1"
 
 [[projects]]
+  digest = "1:d86c8eb7189141c0e902fd8dcf6e79b8feea523978018e20f2ac794626ad0f63"
+  name = "github.com/machinebox/graphql"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "05b17f3157491bbfa5d6fc2006443a272d960d15"
+  version = "v0.2.2"
+
+[[projects]]
   digest = "1:fa610f9fe6a93f4a75e64c83673dfff9bf1a34bbb21e6102021b6bc7850834a3"
   name = "github.com/mattn/go-isatty"
   packages = ["."]
   pruneopts = "UT"
   revision = "57fdcb988a5c543893cc61bce354a6e24ab70022"
+
+[[projects]]
+  digest = "1:cf31692c14422fa27c83a05292eb5cbe0fb2775972e8f1f8446a71549bd8980b"
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "ba968bfe8b2f7e042a574c888954fccecfa385b4"
+  version = "v0.8.1"
 
 [[projects]]
   digest = "1:2e76a73cb51f42d63a2a1a85b3dc5731fd4faf6821b434bd0ef2c099186031d6"
@@ -179,11 +203,13 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/agnivade/levenshtein",
     "github.com/anaskhan96/soup",
     "github.com/asdine/storm",
     "github.com/cavaliercoder/grab",
     "github.com/gin-gonic/gin",
     "github.com/jasonlvhit/gocron",
+    "github.com/machinebox/graphql",
     "github.com/rs/xid",
     "github.com/sirupsen/logrus",
     "github.com/speps/go-hashids",

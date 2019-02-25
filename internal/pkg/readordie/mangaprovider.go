@@ -1,4 +1,4 @@
-package core
+package readordie
 
 import (
 	"errors"
@@ -18,6 +18,10 @@ func ProviderFromString(provider string) (MangaProvider, error) {
 		return ReadMangaToday{}, nil
 	case "MangaStream":
 		return MangaStream{}, nil
+	case "MangaHub":
+		return MangaHub{}, nil
+	case "MangaSee":
+		return MangaSee{}, nil
 	default:
 		return nil, errors.New("Unsupported provider")
 	}

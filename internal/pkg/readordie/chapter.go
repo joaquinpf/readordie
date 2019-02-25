@@ -1,4 +1,4 @@
-package core
+package readordie
 
 import (
 	"fmt"
@@ -41,7 +41,7 @@ func (ch Chapter) ListPages() ([]Page, error) {
 
 func (ch Chapter) String() string {
 	if ch.Minor == 0 {
-		return fmt.Sprintf("%v", ch.Major)
+		return fmt.Sprintf("c%03d", ch.Major)
 	}
-	return fmt.Sprintf("%v.%v", ch.Major, ch.Minor)
+	return fmt.Sprintf("c%03d.%v", ch.Major, ch.Minor)
 }
