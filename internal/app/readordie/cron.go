@@ -38,10 +38,10 @@ func (env cronEnv) updateMangas() {
 	}
 
 	for _, manga := range mangas {
-		log.Infof("Checking for updates for %v", manga)
+		log.Infof("Checking for updates for %v from %v", manga, manga.Provider)
 		chapters, err := manga.ListChapters()
 		if err != nil {
-			log.Errorf("Unable to load chapters for %v", manga)
+			log.Errorf("Unable to load chapters for %v from %v", manga, manga.Provider)
 			continue
 		}
 		mangaRepo := env.db.From(manga.ID)
